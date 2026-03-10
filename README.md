@@ -4,11 +4,35 @@ Projeto para monitorar abertura/alteração de vagas em turmas universitárias (
 
 > **Escopo ético:** o sistema somente consulta mudanças e notifica. **Não** automatiza matrícula e não executa ações dentro do SIGAA.
 
-## Execução local (Desktop UI - padrão)
+## Modo principal: Desktop/Local
 
-A entrada principal para usuário final é a interface desktop em `tkinter`.
+O fluxo recomendado para uso diário é a aplicação desktop (Tkinter), rodando localmente no seu computador.
+
+### Instalação local
+
+1. **Clone o repositório** e entre na pasta do projeto.
+2. **Crie e ative um ambiente virtual (`venv`)**.
+3. **Instale as dependências**.
+4. **Configure o `.env`** com os parâmetros desejados.
+5. **Execute a interface desktop**.
+
+Exemplo (Linux/macOS):
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python -m desktop_app.main
+```
+
+Exemplo (Windows PowerShell):
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
 python -m desktop_app.main
 ```
 
@@ -18,9 +42,54 @@ Funcionalidades da UI:
 - Histórico recente por item selecionado.
 - Controles de execução (executar ciclo, iniciar e parar monitoramento contínuo).
 
+## Configuração local (`.env`)
+
+As variáveis de ambiente são carregadas automaticamente via `python-dotenv` em `config.py`.
+
+### Banco local
+- `DB_PATH`: caminho do arquivo SQLite usado para persistir monitoramentos/histórico.
+  - Exemplo: `DB_PATH=monitor.db`
+
+### Intervalo e comportamento de execução
+- `CHECK_INTERVAL_SECONDS`: intervalo (em segundos) entre ciclos no modo contínuo.
+- `REQUEST_TIMEOUT_SECONDS`: timeout de chamadas HTTP.
+- `MAX_RETRIES`: número de tentativas em falhas transitórias.
+- `BACKOFF_SECONDS`: espera base entre tentativas.
+- `DRY_RUN`: quando `true`, suprime envio real de notificações externas.
+
+### Notificações
+- Desktop:
+  - `DESKTOP_NOTIFICATIONS_ENABLED=true|false`
+- Telegram:
+  - `TELEGRAM_ENABLED`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+- E-mail (SMTP):
+  - `EMAIL_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TO`, `SMTP_USE_TLS`
+
+## Troubleshooting de notificações desktop
+
+### Linux
+- Erro comum: nada acontece ao disparar notificação desktop.
+- Verifique se o utilitário `notify-send` está instalado e no PATH:
+  ```bash
+  which notify-send
+  ```
+- Em distribuições Debian/Ubuntu, instale via:
+  ```bash
+  sudo apt install libnotify-bin
+  ```
+- Em sessões sem servidor gráfico (headless/WSL sem GUI), notificações desktop podem não aparecer.
+
+### Windows
+- O backend desktop usa a biblioteca `win10toast` para toast notifications.
+- Se aparecer aviso de biblioteca ausente, instale manualmente no ambiente virtual:
+  ```powershell
+  pip install win10toast
+  ```
+- Confirme se as notificações do sistema estão habilitadas em **Configurações > Sistema > Notificações**.
+
 ## CLI (opcional / compatibilidade)
 
-A CLI antiga continua disponível em `main.py`:
+A CLI continua disponível para uso avançado/compatibilidade:
 
 ```bash
 python main.py --help
@@ -33,32 +102,16 @@ Comandos principais:
 - `history`
 - `run`
 
-## Configuração
+## Arquitetura web (legado/opcional)
 
-As variáveis de ambiente são carregadas via `.env` por `config.py`.
-Exemplos:
-- `DB_PATH`
-- `CHECK_INTERVAL_SECONDS`
-- `DRY_RUN`
-- opções de notificação (`TELEGRAM_*`, `EMAIL_*`, `DESKTOP_NOTIFICATIONS_ENABLED`)
+A arquitetura web (frontend Next.js + backend FastAPI + workers + Docker Compose) permanece no repositório como opção secundária/histórica.
 
-## Web app (opcional)
+Consulte a documentação dedicada em:
 
-O repositório também mantém uma versão web:
+- `docs/ARCHITECTURE_WEBAPP.md`
 
-- **Frontend:** Next.js + TypeScript + Tailwind + Recharts.
-- **Backend:** FastAPI + SQLAlchemy + JWT + PostgreSQL.
-- **Assíncrono:** Celery + Redis.
-- **Infra:** Docker Compose.
-
-Rodando com Docker:
+Para subir a stack web com Docker:
 
 ```bash
 docker compose -f infra/docker-compose.yml up --build
 ```
-
-Serviços:
-- Frontend: http://localhost:3000
-- API: http://localhost:8000/docs
-
-Detalhes completos em `docs/ARCHITECTURE_WEBAPP.md`.
