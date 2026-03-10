@@ -48,7 +48,8 @@ services:
       context: ..
       dockerfile: infra/frontend.Dockerfile
     environment:
-      NEXT_PUBLIC_API_URL: http://backend:8000
+      # Exposed to browser code, so it must be reachable from the host machine.
+      NEXT_PUBLIC_API_URL: http://localhost:8000
     depends_on:
       - backend
     ports:
