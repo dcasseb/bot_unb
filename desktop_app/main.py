@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import logging
-import threading
 import tkinter as tk
+from queue import Empty, Queue
 from tkinter import messagebox, ttk
 
 from app_services import AddClassInput, MonitoringAppService
 from config import load_config
+from desktop_app.monitor_controller import MonitorController, MonitorEvent
 from monitor import MonitorService, SIGAAFetcher
 from notifier import NotifierHub
 from storage import MonitoredClass, Storage
@@ -20,14 +21,14 @@ class DesktopApp:
         self.service = service
         self.interval = interval
         self.selected_class_id: int | None = None
-        self.is_running = False
-        self.stop_event: threading.Event | None = None
-        self.run_thread: threading.Thread | None = None
+        self.monitor_events: Queue[MonitorEvent] = Queue()
+        self.monitor_controller = MonitorController(service, self.monitor_events)
 
         self.root.title("SIGAA UnB Monitor")
         self.root.geometry("1200x700")
         self._build_ui()
         self.refresh_classes()
+        self._poll_monitor_events()
 
     def _build_ui(self) -> None:
         self.root.columnconfigure(0, weight=3)
@@ -206,26 +207,32 @@ class DesktopApp:
             self.refresh_history(self.selected_class_id)
 
     def start_monitoring(self) -> None:
-        if self.is_running:
+        if self.monitor_controller.is_running:
             return
-        self.stop_event = threading.Event()
-        self.is_running = True
         self.run_status.set("Em execução")
-
-        def _target() -> None:
-            assert self.stop_event is not None
-            self.service.run_loop(interval=self.interval, stop_event=self.stop_event)
-
-        self.run_thread = threading.Thread(target=_target, daemon=True)
-        self.run_thread.start()
+        self.monitor_controller.start(interval=self.interval)
 
     def stop_monitoring(self) -> None:
-        if not self.is_running:
+        if not self.monitor_controller.is_running:
             return
-        if self.stop_event is not None:
-            self.stop_event.set()
-        self.is_running = False
-        self.run_status.set("Parado")
+        self.monitor_controller.stop()
+
+    def _poll_monitor_events(self) -> None:
+        while True:
+            try:
+                event = self.monitor_events.get_nowait()
+            except Empty:
+                break
+
+            if event.event_type == "cycle_result":
+                if self.selected_class_id is not None:
+                    self.refresh_history(self.selected_class_id)
+            elif event.event_type == "cycle_error":
+                logger.error("Erro no ciclo de monitoramento: %s", event.payload)
+            elif event.event_type == "stopped":
+                self.run_status.set("Parado")
+
+        self.root.after(250, self._poll_monitor_events)
 
 
 def build_desktop_service() -> tuple[MonitoringAppService, int]:
