@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     database_url: str = 'postgresql+psycopg://postgres:postgres@db:5432/monitor'
     redis_url: str = 'redis://redis:6379/0'
 
+    telegram_notifications_enabled: bool = False
+    telegram_bot_token: str | None = None
+    telegram_chat_id: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
