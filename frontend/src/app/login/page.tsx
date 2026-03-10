@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api';
 
 export default function LoginPage() {
@@ -24,6 +25,12 @@ export default function LoginPage() {
         <input className="w-full rounded-md border p-2" placeholder="Senha" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button className="w-full rounded-md bg-slate-900 p-2 text-white">Login</button>
       </form>
+      <p className="mt-4 text-center text-sm text-slate-600 dark:text-slate-300">
+        Ainda não tem conta?{' '}
+        <Link className="font-medium text-slate-900 underline dark:text-white" href="/register">
+          Registrar
+        </Link>
+      </p>
     </div>
   );
 }
