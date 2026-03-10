@@ -208,3 +208,19 @@ class Storage:
                 """,
                 (limit,),
             ).fetchall()
+
+    def recent_history_for_class(self, class_id: int, limit: int = 20) -> list[sqlite3.Row]:
+        with self._conn() as conn:
+            return conn.execute(
+                """
+                SELECT h.id, h.class_id, m.code, m.class_group, m.term,
+                       h.total_seats, h.occupied_seats, h.available_seats,
+                       h.status, h.observed_at, h.changed, h.change_summary
+                FROM state_history h
+                JOIN monitored_classes m ON m.id = h.class_id
+                WHERE h.class_id = ?
+                ORDER BY h.id DESC
+                LIMIT ?
+                """,
+                (class_id, limit),
+            ).fetchall()

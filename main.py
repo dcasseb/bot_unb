@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import argparse
 import logging
-import time
+from threading import Event
 
+from app_services import AddClassInput, MonitoringAppService
 from config import load_config
 from monitor import MonitorService, SIGAAFetcher
 from notifier import NotifierHub
-from storage import MonitoredClass, Storage
-
+from storage import Storage
 
 
 def setup_logging() -> None:
@@ -16,7 +16,6 @@ def setup_logging() -> None:
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
-
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -46,11 +45,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-
-def cmd_add(storage: Storage, args: argparse.Namespace) -> None:
-    class_id = storage.add_monitored_class(
-        MonitoredClass(
-            id=None,
+def cmd_add(service: MonitoringAppService, args: argparse.Namespace) -> None:
+    class_id = service.add_class(
+        AddClassInput(
             code=args.code,
             name=args.name,
             class_group=args.class_group,
@@ -62,9 +59,8 @@ def cmd_add(storage: Storage, args: argparse.Namespace) -> None:
     print(f"Turma adicionada com ID {class_id}")
 
 
-
-def cmd_list(storage: Storage) -> None:
-    items = storage.list_monitored_classes()
+def cmd_list(service: MonitoringAppService) -> None:
+    items = service.list_classes()
     if not items:
         print("Nenhuma turma cadastrada")
         return
@@ -75,17 +71,15 @@ def cmd_list(storage: Storage) -> None:
         )
 
 
-
-def cmd_remove(storage: Storage, class_id: int) -> None:
-    if storage.remove_monitored_class(class_id):
+def cmd_remove(service: MonitoringAppService, class_id: int) -> None:
+    if service.remove_class(class_id):
         print(f"Turma {class_id} removida")
     else:
         print(f"Turma {class_id} não encontrada")
 
 
-
-def cmd_history(storage: Storage, limit: int) -> None:
-    rows = storage.recent_history(limit)
+def cmd_history(service: MonitoringAppService, limit: int) -> None:
+    rows = service.history(limit)
     if not rows:
         print("Sem histórico")
         return
@@ -98,33 +92,13 @@ def cmd_history(storage: Storage, limit: int) -> None:
         )
 
 
-
-def cmd_run(storage: Storage, service: MonitorService, interval: int, once: bool) -> None:
-    while True:
-        classes = storage.list_monitored_classes()
-        if not classes:
+def cmd_run(service: MonitoringAppService, interval: int, once: bool) -> None:
+    if once:
+        summary = service.run_cycle()
+        if summary["checked"] == 0:
             print("Nenhuma turma cadastrada para monitoramento")
-            if once:
-                return
-            time.sleep(interval)
-            continue
-
-        for monitored_class in classes:
-            try:
-                service.check_once(monitored_class)
-            except Exception as exc:  # noqa: BLE001
-                logging.getLogger(__name__).error(
-                    "Erro ao verificar %s T%s: %s",
-                    monitored_class.code,
-                    monitored_class.class_group,
-                    exc,
-                )
-
-        if once:
-            return
-
-        time.sleep(interval)
-
+        return
+    service.run_loop(interval=interval, stop_event=Event())
 
 
 def main() -> None:
@@ -136,25 +110,27 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+    fetcher = SIGAAFetcher(config)
+    notifier = NotifierHub(config)
+    monitor_service = MonitorService(storage, fetcher, notifier, config)
+    app_service = MonitoringAppService(storage, monitor_service)
+
     if args.command == "add":
-        cmd_add(storage, args)
+        cmd_add(app_service, args)
         return
     if args.command == "list":
-        cmd_list(storage)
+        cmd_list(app_service)
         return
     if args.command == "remove":
-        cmd_remove(storage, args.id)
+        cmd_remove(app_service, args.id)
         return
     if args.command == "history":
-        cmd_history(storage, args.limit)
+        cmd_history(app_service, args.limit)
         return
 
     if args.command == "run":
         interval = args.interval if args.interval is not None else config.check_interval_seconds
-        fetcher = SIGAAFetcher(config)
-        notifier = NotifierHub(config)
-        service = MonitorService(storage, fetcher, notifier, config)
-        cmd_run(storage, service, interval=interval, once=args.once)
+        cmd_run(app_service, interval=interval, once=args.once)
 
 
 if __name__ == "__main__":
