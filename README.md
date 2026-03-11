@@ -42,6 +42,44 @@ Funcionalidades da UI:
 - Histórico recente por item selecionado.
 - Controles de execução (executar ciclo, iniciar e parar monitoramento contínuo).
 
+## Empacotamento desktop com PyInstaller
+
+Foi adicionado um fluxo explícito para gerar um executável da interface desktop (`desktop_app/main.py`) com PyInstaller.
+
+### Pré-requisitos
+
+- Ambiente virtual ativo.
+- Dependências do projeto instaladas (`pip install -r requirements.txt`).
+- PyInstaller instalado no ambiente (`pip install pyinstaller`).
+
+### Build do binário
+
+Use o script versionado:
+
+```bash
+./scripts/build_desktop.sh
+```
+
+Esse script executa o PyInstaller com o arquivo de especificação `desktop_app/SIGAAUnBMonitor.spec` e gera o binário em `dist/SIGAAUnBMonitor`.
+
+### Arquivo `.spec` versionado
+
+O arquivo `desktop_app/SIGAAUnBMonitor.spec` define:
+
+- Nome do executável: `SIGAAUnBMonitor`.
+- Inclusão de dados necessários no build (`.env.example`).
+- Build em modo janela (`console=False`), adequado para Tkinter (`--windowed`).
+
+### Execução do binário gerado
+
+Após o build, execute:
+
+```bash
+./dist/SIGAAUnBMonitor
+```
+
+No Windows, o executável correspondente será gerado com extensão `.exe` no diretório `dist`.
+
 ## Configuração local (`.env`)
 
 As variáveis de ambiente são carregadas automaticamente via `python-dotenv` em `config.py`.
