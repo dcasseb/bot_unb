@@ -3,9 +3,41 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  --bg: 247 245 239;
+  --fg: 31 34 37;
+  --muted: 113 116 120;
+  --border: 209 203 194;
+  --accent: 57 97 85;
+  --accent-soft: 228 236 232;
+}
+
+.dark {
+  --bg: 20 22 26;
+  --fg: 231 233 235;
+  --muted: 156 160 168;
+  --border: 66 70 78;
+  --accent: 106 174 148;
+  --accent-soft: 36 46 44;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  @apply bg-bg text-fg antialiased;
+  background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.04) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.card {
+  @apply rounded-xl border border-border/80 bg-bg/90 p-6 shadow-sm backdrop-blur;
+}
+
+.retro-label {
+  @apply rounded-full border border-border px-3 py-1 text-xs uppercase tracking-[0.12em] text-muted;
+}
+
+.prose pre {
+  @apply border border-border;
 }
