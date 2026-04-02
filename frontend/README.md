@@ -6,6 +6,11 @@ A production-ready, open-access personal blog designed with a modern-retro visua
 
 - GitHub: https://github.com/dcasseb/personal-blog.git
 
+## Environment target
+
+- Target environment: `personal-blog`
+- Copy `.env.example` to `.env.local` and keep `NEXT_PUBLIC_ENVIRONMENT=personal-blog`.
+
 ## Stack
 
 - Next.js 14 (App Router)
@@ -67,6 +72,7 @@ links:
 ## Local Development
 
 ```bash
+cp .env.example .env.local
 npm install
 npm run dev
 ```
