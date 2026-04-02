@@ -1,0 +1,38 @@
+---
+title: Designing Software for Longevity
+date: 2026-03-14
+updated: 2026-03-20
+tags: [Architecture, Writing, DX]
+category: Engineering
+excerpt: Practical principles for building tools that age gracefully and remain easy to evolve.
+coverImage: /branding/post-1.jpg
+featured: true
+draft: false
+relatedProject: retro-notes-engine
+---
+
+## Why longevity matters
+
+Software rarely fails because it cannot ship. It fails when it cannot evolve.
+
+> Favor systems that are clear over systems that are merely clever.
+
+## A practical framework
+
+1. Start with explicit constraints.
+2. Design boundaries around change.
+3. Document decisions where they happen.
+
+## Example policy
+
+```ts
+export const maintainability = {
+  tests: 'required',
+  docs: 'close to code',
+  ownership: 'clear',
+}
+```
+
+## Final thought
+
+Long-lived systems are authored with care, not speed alone.
